@@ -37,7 +37,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_name'] = $user['name'];
             $_SESSION['user_role'] = $user['role_name'];
 
-            // ✅ SAHI JAGAH — login hone ke baad redirect
+            // Regenerate session ID after login to prevent session fixation attacks
+            session_regenerate_id(true);
+
+          
             if ($user['role_name'] === 'Admin') {
                 header('Location: admin/dashboard.php');
             } else {
