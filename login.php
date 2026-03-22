@@ -1,20 +1,20 @@
 <?php
-/**
- * login.php — User Login
- */
 session_start();
 
 if (isset($_SESSION['user_id'])) {
-    header('Location: dashboard.php');
+    if ($_SESSION['user_role'] === 'Admin') {
+        header('Location: admin/dashboard.php');
+    } else {
+        header('Location: dashboard.php');
+    }
     exit;
 }
 
-// ── PHP Login Logic ──────────────────────
 $error   = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    require_once 'includes/db.php'; // require your DB connection
+    require_once 'includes/db.php';
 
     $email    = trim($_POST['email']    ?? '');
     $password = trim($_POST['password'] ?? '');
@@ -22,7 +22,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($email) || empty($password)) {
         $error = 'Please fill in all fields.';
     } else {
-        // Example query — adjust table/column names to match your schema
         $stmt = $pdo->prepare("
             SELECT u.id, u.name, u.password, r.role_name
             FROM   users u
@@ -37,7 +36,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_id']   = $user['id'];
             $_SESSION['user_name'] = $user['name'];
             $_SESSION['user_role'] = $user['role_name'];
-            header('Location: dashboard.php');
+
+            // ✅ SAHI JAGAH — login hone ke baad redirect
+            if ($user['role_name'] === 'Admin') {
+                header('Location: admin/dashboard.php');
+            } else {
+                header('Location: dashboard.php');
+            }
             exit;
         } else {
             $error = 'Invalid email or password. Please try again.';
@@ -55,14 +60,12 @@ require 'components/head.php';
   <div class="auth-page">
     <div class="auth-container fade-up">
 
-      <!-- Header -->
       <div class="auth-header">
         <div class="auth-logo">📋</div>
         <h2>Welcome back</h2>
         <p>Sign in to your account to continue</p>
       </div>
 
-      <!-- Card -->
       <div class="glass-card auth-card">
 
         <?php if ($error): ?>
@@ -71,41 +74,25 @@ require 'components/head.php';
 
         <form id="loginForm" method="POST" action="login.php" novalidate>
 
-          <!-- Email -->
           <div class="form-group">
-            <input
-              type="email"
-              id="email"
-              name="email"
-              class="form-control"
+            <input type="email" id="email" name="email" class="form-control"
               placeholder="Email"
               value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
-              required
-              autocomplete="email"
-            >
+              required autocomplete="email">
             <label class="floating-label" for="email">Email Address</label>
             <span class="form-error">Please enter a valid email address.</span>
           </div>
 
-          <!-- Password -->
           <div class="form-group">
             <div class="input-wrapper">
-              <input
-                type="password"
-                id="password"
-                name="password"
-                class="form-control"
-                placeholder="Password"
-                required
-                autocomplete="current-password"
-              >
+              <input type="password" id="password" name="password" class="form-control"
+                placeholder="Password" required autocomplete="current-password">
               <button type="button" class="toggle-password" title="Show password">👁️</button>
             </div>
             <label class="floating-label" for="password">Password</label>
             <span class="form-error">Password must be at least 6 characters.</span>
           </div>
 
-          <!-- Submit -->
           <button type="submit" class="btn btn-primary btn-full" style="margin-top:8px;">
             <span class="spinner"></span>
             <span class="btn-text">Sign In &nbsp;→</span>
@@ -115,7 +102,6 @@ require 'components/head.php';
 
       </div>
 
-      <!-- Footer -->
       <div class="auth-footer">
         Don't have an account? <a href="register.php">Create one free</a>
       </div>
