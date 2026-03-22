@@ -4,7 +4,6 @@
  */
 session_start();
 
-// Access control — sirf Admin access kar sakta hai
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Admin') {
     header('Location: ../login.php');
     exit;
@@ -12,7 +11,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Admin') {
 
 require_once '../includes/db.php';
 
-// Fetch all complaints with user + category info
 $stmt = $pdo->query("
     SELECT
         c.id, c.title, c.description, c.location, c.status, c.created_at,
@@ -28,7 +26,6 @@ $stmt = $pdo->query("
 ");
 $complaints = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Fetch images for each complaint
 $complaintIds = array_column($complaints, 'id');
 $images = [];
 if ($complaintIds) {
@@ -44,17 +41,13 @@ if ($complaintIds) {
     }
 }
 
-// Stats
-$total     = count($complaints);
-$submitted = count(array_filter($complaints, fn($c) => $c['status'] === 'Submitted'));
-$completed = count(array_filter($complaints, fn($c) => $c['status'] === 'Completed'));
+$total      = count($complaints);
+$submitted  = count(array_filter($complaints, fn($c) => $c['status'] === 'Submitted'));
+$inprogress = count(array_filter($complaints, fn($c) => $c['status'] === 'In Progress'));
+$completed  = count(array_filter($complaints, fn($c) => $c['status'] === 'Completed'));
 
-$activePage = 'admin-dashboard';
-$pageTitle  = 'Admin Dashboard';
-
-// head.php ka path admin folder se alag hai
 $siteTitle = 'Complaint Management System – by Papa';
-$fullTitle  = $pageTitle . ' · ' . $siteTitle;
+$fullTitle  = 'Admin Dashboard · ' . $siteTitle;
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
@@ -66,26 +59,63 @@ $fullTitle  = $pageTitle . ' · ' . $siteTitle;
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    /* In Progress badge */
+    .badge-in-progress {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    /* Zoom fix — update form stays in place */
+    .update-form {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      transform: none !important;
+      zoom: 1 !important;
+    }
+
+    .update-form select {
+      width: auto;
+      padding: 8px 14px;
+      border-radius: 10px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--glass-border);
+      font-size: 14px;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .update-form select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* Stop card zoom on form click */
+    .complaint-card .update-form * {
+      pointer-events: all;
+    }
+  </style>
 </head>
 <body>
 
-<!-- Animated Background — same as user dashboard -->
 <div id="bg-canvas">
   <div class="orb orb-1"></div>
   <div class="orb orb-2"></div>
   <div class="orb orb-3"></div>
 </div>
 
-<!-- Theme Toggle -->
 <button id="themeToggle" class="theme-toggle" title="Toggle theme" aria-label="Toggle dark/light mode">☀️</button>
-
-<!-- Toast Container -->
 <div id="toastContainer" class="toast-container"></div>
 
 <div class="page-wrapper">
 <div class="dashboard-layout">
 
-  <!-- Sidebar — same structure as user sidebar -->
   <?php
     $userName    = $_SESSION['user_name'] ?? 'Admin';
     $userRole    = $_SESSION['user_role'] ?? 'Admin';
@@ -119,36 +149,26 @@ $fullTitle  = $pageTitle . ' · ' . $siteTitle;
     </div>
   </aside>
 
-  <!-- Main Content -->
   <div class="main-content" id="mainContent">
 
-    <!-- Topbar -->
     <header class="topbar">
       <button id="mobileSidebarToggle" class="mobile-toggle" aria-label="Open menu" style="display:none;">☰</button>
       <span class="topbar-title">All Complaints</span>
-
-      <!-- Search -->
       <div class="search-bar">
         <span class="search-icon">🔍</span>
-        <input
-          type="text"
-          id="searchInput"
-          class="search-input"
+        <input type="text" id="searchInput" class="search-input"
           placeholder="Search by title, user or category…"
-          aria-label="Search complaints"
-        >
+          aria-label="Search complaints">
       </div>
-
       <div class="topbar-actions">
         <span style="font-size:13px; color:var(--text-secondary);">👑 Admin Panel</span>
       </div>
     </header>
 
-    <!-- Content -->
     <div class="content-area">
 
-      <!-- Stats Row — same as user dashboard -->
-      <div class="stats-row mb-24">
+      <!-- Stats Row — 4 stats ab -->
+      <div class="stats-row mb-24" style="grid-template-columns: repeat(4, 1fr);">
         <div class="glass-card stat-card total fade-up">
           <div class="stat-value"><?= $total ?></div>
           <div class="stat-label">Total</div>
@@ -157,20 +177,24 @@ $fullTitle  = $pageTitle . ' · ' . $siteTitle;
           <div class="stat-value"><?= $submitted ?></div>
           <div class="stat-label">Submitted</div>
         </div>
-        <div class="glass-card stat-card completed fade-up delay-2">
+        <div class="glass-card stat-card fade-up delay-2" style="border-color: rgba(245,158,11,0.3);">
+          <div class="stat-value" style="color: #f59e0b;"><?= $inprogress ?></div>
+          <div class="stat-label">In Progress</div>
+        </div>
+        <div class="glass-card stat-card completed fade-up delay-3">
           <div class="stat-value"><?= $completed ?></div>
           <div class="stat-label">Completed</div>
         </div>
       </div>
 
-      <!-- Filter Pills — same as user dashboard -->
+      <!-- Filter Pills — In Progress add kiya -->
       <div class="filter-pills mb-24 fade-up delay-1">
         <button class="pill active" data-filter="all">All</button>
         <button class="pill" data-filter="submitted">⏳ Submitted</button>
+        <button class="pill" data-filter="in-progress">🔄 In Progress</button>
         <button class="pill" data-filter="completed">✅ Completed</button>
       </div>
 
-      <!-- Complaints Grid — same layout as user dashboard -->
       <div class="complaints-grid" id="complaintsGrid">
 
         <?php if (empty($complaints)): ?>
@@ -189,7 +213,7 @@ $fullTitle  = $pageTitle . ' · ' . $siteTitle;
           </div>
 
           <?php foreach ($complaints as $i => $c):
-            $statusKey  = strtolower($c['status']);
+            $statusKey  = strtolower(str_replace(' ', '-', $c['status']));
             $cardImages = $images[$c['id']] ?? [];
             $delay      = min($i, 5);
           ?>
@@ -203,7 +227,6 @@ $fullTitle  = $pageTitle . ' · ' . $siteTitle;
             tabindex="0"
             aria-expanded="false"
           >
-            <!-- Card Top — same as user dashboard -->
             <div class="complaint-card-inner">
               <div class="complaint-card-top">
                 <h3 class="complaint-title"><?= htmlspecialchars($c['title']) ?></h3>
@@ -220,7 +243,6 @@ $fullTitle  = $pageTitle . ' · ' . $siteTitle;
               <p class="complaint-preview"><?= htmlspecialchars($c['description']) ?></p>
             </div>
 
-            <!-- Expandable Section — same as user dashboard + admin update form -->
             <div class="complaint-expand">
               <div class="expand-content">
 
@@ -238,7 +260,6 @@ $fullTitle  = $pageTitle . ' · ' . $siteTitle;
                 <p class="expand-location" style="margin-bottom:18px;"><?= htmlspecialchars($c['assigned_name']) ?></p>
                 <?php endif; ?>
 
-                <!-- Images -->
                 <p class="expand-section-title">🖼️ Attachments</p>
                 <?php if ($cardImages): ?>
                   <div class="expand-images">
@@ -252,15 +273,25 @@ $fullTitle  = $pageTitle . ' · ' . $siteTitle;
                   <p class="no-images">No images attached.</p>
                 <?php endif; ?>
 
-                <!-- Admin Update Status Form -->
+                <!-- Admin Update Status Form — zoom fix applied -->
                 <p class="expand-section-title" style="margin-top:24px;">⚙️ Update Status</p>
-                <form method="POST" action="update.php" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:8px;">
+                <form
+                  method="POST"
+                  action="update.php"
+                  class="update-form"
+                  onclick="event.stopPropagation();"
+                >
                   <input type="hidden" name="complaint_id" value="<?= $c['id'] ?>">
-                  <select name="status" class="form-control" style="width:auto; padding:8px 14px; border-radius:10px; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--glass-border);">
-                    <option value="Submitted" <?= $c['status'] === 'Submitted' ? 'selected' : '' ?>>⏳ Submitted</option>
-                    <option value="Completed" <?= $c['status'] === 'Completed' ? 'selected' : '' ?>>✅ Completed</option>
+                  <select name="status">
+                    <option value="Submitted"    <?= $c['status'] === 'Submitted'    ? 'selected' : '' ?>>⏳ Submitted</option>
+                    <option value="In Progress"  <?= $c['status'] === 'In Progress'  ? 'selected' : '' ?>>🔄 In Progress</option>
+                    <option value="Completed"    <?= $c['status'] === 'Completed'    ? 'selected' : '' ?>>✅ Completed</option>
                   </select>
-                  <button type="submit" class="btn btn-primary btn-sm">Update</button>
+                  <button
+                    type="submit"
+                    class="btn btn-primary btn-sm"
+                    onclick="event.stopPropagation();"
+                  >Update</button>
                 </form>
 
               </div>
@@ -270,15 +301,22 @@ $fullTitle  = $pageTitle . ' · ' . $siteTitle;
 
         <?php endif; ?>
 
-      </div><!-- /.complaints-grid -->
+      </div>
 
-    </div><!-- /.content-area -->
-  </div><!-- /.main-content -->
-</div><!-- /.dashboard-layout -->
-</div><!-- /.page-wrapper -->
+    </div>
+  </div>
+</div>
+</div>
 
 <script>
-// Keyboard accessibility — same as user dashboard
+// Zoom fix — form clicks nahi karenge card expand/collapse
+document.querySelectorAll('.update-form').forEach(function(form) {
+  form.addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
+});
+
+// Keyboard accessibility
 document.querySelectorAll('.complaint-card').forEach(function(card) {
   card.addEventListener('keydown', function(e) {
     if (e.key === 'Enter' || e.key === ' ') {

@@ -91,7 +91,7 @@ CREATE TABLE `complaints` (
     `title`       VARCHAR(200) NOT NULL,
     `description` TEXT         NOT NULL,
     `location`    TEXT         NOT NULL COMMENT 'Full text address supplied by the user',
-    `status`      ENUM('Submitted','Completed')
+    `status`      ENUM('Submitted','In Progress','Completed')
                               NOT NULL DEFAULT 'Submitted',
     `created_at`  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP

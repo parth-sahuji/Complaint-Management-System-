@@ -45,9 +45,10 @@ if ($complaintIds) {
 }
 
 // Stats
-$total     = count($complaints);
-$submitted = count(array_filter($complaints, fn($c) => $c['status'] === 'Submitted'));
-$completed = count(array_filter($complaints, fn($c) => $c['status'] === 'Completed'));
+$total      = count($complaints);
+$submitted  = count(array_filter($complaints, fn($c) => $c['status'] === 'Submitted'));
+$inprogress = count(array_filter($complaints, fn($c) => $c['status'] === 'In Progress'));
+$completed  = count(array_filter($complaints, fn($c) => $c['status'] === 'Completed'));
 
 $activePage = 'dashboard';
 $pageTitle  = 'Dashboard';
@@ -66,9 +67,7 @@ require 'components/head.php';
 
     <!-- Topbar -->
     <header class="topbar">
-      <!-- Mobile hamburger -->
       <button id="mobileSidebarToggle" class="mobile-toggle" aria-label="Open menu" style="display:none;">☰</button>
-
       <span class="topbar-title">My Complaints</span>
 
       <!-- Search -->
@@ -92,8 +91,8 @@ require 'components/head.php';
     <!-- Content -->
     <div class="content-area">
 
-      <!-- Stats Row -->
-      <div class="stats-row mb-24">
+      <!-- Stats Row — 4 stats -->
+      <div class="stats-row mb-24" style="grid-template-columns: repeat(4, 1fr);">
         <div class="glass-card stat-card total fade-up">
           <div class="stat-value"><?= $total ?></div>
           <div class="stat-label">Total</div>
@@ -102,16 +101,21 @@ require 'components/head.php';
           <div class="stat-value"><?= $submitted ?></div>
           <div class="stat-label">Submitted</div>
         </div>
-        <div class="glass-card stat-card completed fade-up delay-2">
+        <div class="glass-card stat-card fade-up delay-2" style="border-color: rgba(245,158,11,0.3);">
+          <div class="stat-value" style="color: #f59e0b;"><?= $inprogress ?></div>
+          <div class="stat-label">In Progress</div>
+        </div>
+        <div class="glass-card stat-card completed fade-up delay-3">
           <div class="stat-value"><?= $completed ?></div>
           <div class="stat-label">Completed</div>
         </div>
       </div>
 
-      <!-- Filter Pills -->
+      <!-- Filter Pills — In Progress add kiya -->
       <div class="filter-pills mb-24 fade-up delay-1">
         <button class="pill active" data-filter="all">All</button>
         <button class="pill" data-filter="submitted">⏳ Submitted</button>
+        <button class="pill" data-filter="in-progress">🔄 In Progress</button>
         <button class="pill" data-filter="completed">✅ Completed</button>
       </div>
 
@@ -119,7 +123,6 @@ require 'components/head.php';
       <div class="complaints-grid" id="complaintsGrid">
 
         <?php if (empty($complaints)): ?>
-          <!-- Empty State -->
           <div class="empty-state" id="emptyState" style="display:flex;flex-direction:column;align-items:center;">
             <span class="empty-icon">🚀</span>
             <h3>No complaints yet</h3>
@@ -129,7 +132,6 @@ require 'components/head.php';
 
         <?php else: ?>
 
-          <!-- Hidden empty state (shown by JS filter) -->
           <div class="empty-state" id="emptyState" style="display:none;flex-direction:column;align-items:center;">
             <span class="empty-icon">🔍</span>
             <h3>No results found</h3>
@@ -137,9 +139,9 @@ require 'components/head.php';
           </div>
 
           <?php foreach ($complaints as $i => $c):
-            $statusKey = strtolower($c['status']);
+            $statusKey  = strtolower(str_replace(' ', '-', $c['status']));
             $cardImages = $images[$c['id']] ?? [];
-            $delay = min($i, 5);
+            $delay      = min($i, 5);
           ?>
           <article
             class="glass-card complaint-card fade-up delay-<?= $delay ?>"
@@ -170,21 +172,17 @@ require 'components/head.php';
             <div class="complaint-expand">
               <div class="expand-content">
 
-                <!-- Full Description -->
                 <p class="expand-section-title">Description</p>
                 <p class="expand-description"><?= nl2br(htmlspecialchars($c['description'])) ?></p>
 
-                <!-- Location -->
                 <p class="expand-section-title">📍 Location</p>
                 <p class="expand-location"><?= htmlspecialchars($c['location']) ?></p>
 
                 <?php if ($c['assigned_name']): ?>
-                <!-- Assigned To -->
                 <p class="expand-section-title">👤 Assigned To</p>
                 <p class="expand-location" style="margin-bottom:18px;"><?= htmlspecialchars($c['assigned_name']) ?></p>
                 <?php endif; ?>
 
-                <!-- Images -->
                 <p class="expand-section-title">🖼️ Attachments</p>
                 <?php if ($cardImages): ?>
                   <div class="expand-images">
@@ -218,7 +216,6 @@ require 'components/head.php';
 </div><!-- /.page-wrapper -->
 
 <script>
-// Keyboard accessibility for cards
 document.querySelectorAll('.complaint-card').forEach(function(card) {
   card.addEventListener('keydown', function(e) {
     if (e.key === 'Enter' || e.key === ' ') {
