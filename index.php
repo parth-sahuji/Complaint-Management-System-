@@ -1,7 +1,7 @@
 <?php
 /**
  * index.php — Landing Page
- * Complaint Management System – by Papa
+ * Complaint Management System – 
  */
 session_start();
 
@@ -28,7 +28,7 @@ require 'components/head.php';
     <!-- Title -->
     <h1 class="display-title landing-title fade-up delay-1">
       Complaint Management
-      <span class="line2">System – by Papa</span>
+      <span class="line2">System</span>
     </h1>
 
     <!-- Description -->
