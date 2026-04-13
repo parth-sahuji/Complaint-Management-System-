@@ -1,4 +1,4 @@
-# 📋 Complaint Management System – by Papa
+# 📋 Complaint Management System 
 
 A modern, full-stack Online Complaint Management System built with **PHP**, **MySQL**, and a sleek dark-first frontend.
 
